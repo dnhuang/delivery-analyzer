@@ -16,17 +16,25 @@ def load_config():
     """Load configuration from Streamlit secrets or config.json file."""
     # Try Streamlit secrets first (for deployment)
     try:
-        if hasattr(st, 'secrets') and 'password' in st.secrets:
-            return {"password": st.secrets["password"]}
-    except Exception:
-        pass
+        if hasattr(st, 'secrets'):
+            if 'password' in st.secrets:
+                return {"password": st.secrets["password"]}
+            else:
+                # Running on Streamlit Cloud but password not configured
+                st.error("❌ Password not configured in Streamlit secrets!")
+                st.info("💡 Go to your app settings → Secrets and add:")
+                st.code('password = "your_password_here"')
+                return None
+    except Exception as e:
+        st.error(f"Error accessing Streamlit secrets: {str(e)}")
+        return None
     
     # Fallback to config.json file (for local development)
     try:
         with open('config.json', 'r') as f:
             return json.load(f)
     except FileNotFoundError:
-        st.error("❌ Configuration not found! Please set up password in Streamlit secrets or ensure config.json exists.")
+        st.error("❌ Configuration not found!")
         st.info("💡 **For deployment**: Add password to Streamlit Cloud secrets")
         st.info("💡 **For local development**: Ensure config.json file exists")
         return None
