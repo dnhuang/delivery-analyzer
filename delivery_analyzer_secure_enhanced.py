@@ -13,12 +13,22 @@ import io
 from typing import Dict, List, Tuple
 
 def load_config():
-    """Load configuration from config.json file."""
+    """Load configuration from Streamlit secrets or config.json file."""
+    # Try Streamlit secrets first (for deployment)
+    try:
+        if hasattr(st, 'secrets') and 'password' in st.secrets:
+            return {"password": st.secrets["password"]}
+    except Exception:
+        pass
+    
+    # Fallback to config.json file (for local development)
     try:
         with open('config.json', 'r') as f:
             return json.load(f)
     except FileNotFoundError:
-        st.error("Config file not found! Please ensure config.json exists.")
+        st.error("❌ Configuration not found! Please set up password in Streamlit secrets or ensure config.json exists.")
+        st.info("💡 **For deployment**: Add password to Streamlit Cloud secrets")
+        st.info("💡 **For local development**: Ensure config.json file exists")
         return None
     except Exception as e:
         st.error(f"Error loading config: {str(e)}")
