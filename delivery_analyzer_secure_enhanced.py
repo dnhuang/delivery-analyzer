@@ -144,25 +144,46 @@ def process_excel_to_csv(excel_file):
             if pd.isna(items_text) or items_text == 'nan':
                 continue
             
-            # Parse each food item from the items_ordered text
-            for food_item in food_items:
-                # Extract base name by removing unit specifications
-                # Remove common unit patterns like "15个/份", "50/份", "3个／份", etc.
-                base_name = re.sub(r'\d+个?[/／]?份?$', '', food_item).strip()
+            # Split by Chinese comma and space separator "， "
+            items_list = items_text.split('， ')
+            
+            # Remove the last element (which contains total price)
+            if len(items_list) > 1:
+                items_list = items_list[:-1]
+            
+            # Process each item in the list
+            for item_entry in items_list:
+                item_entry = item_entry.strip()
+                if not item_entry:
+                    continue
                 
-                # Look for patterns like "base_name ... x数量" in the text
-                # The key insight is to match the base name, then look for x followed by quantity
-                patterns = [
-                    f"{re.escape(base_name)}.*?x(\\d+)",
-                    f"{re.escape(base_name)}.*?×(\\d+)"
-                ]
-                
-                for pattern in patterns:
-                    match = re.search(pattern, items_text)
-                    if match:
-                        quantity = int(match.group(1))
-                        df.at[idx, food_item] = quantity
-                        break
+                # Split by "x" to separate item name from quantity
+                if 'x' in item_entry:
+                    parts = item_entry.rsplit('x', 1)  # Split from right to handle multiple x's
+                    if len(parts) == 2:
+                        item_name_part = parts[0].strip()
+                        quantity_part = parts[1].strip()
+                        
+                        # Extract quantity (should be a number, possibly followed by comma or other chars)
+                        quantity_match = re.match(r'(\d+)', quantity_part)
+                        if quantity_match:
+                            quantity = int(quantity_match.group(1))
+                            
+                            # Find matching food item in our list
+                            for food_item in food_items:
+                                # Extract base name by removing unit specifications
+                                base_name = re.sub(r'\d+个?[/／]?份?$', '', food_item).strip()
+                                
+                                # Check if the item name matches the base name
+                                # First try exact match (with and without spaces)
+                                item_name_normalized = item_name_part.replace(" ", "")
+                                base_name_normalized = base_name.replace(" ", "")
+                                
+                                if (base_name in item_name_part or item_name_part in base_name or
+                                    base_name_normalized in item_name_normalized or
+                                    item_name_normalized in base_name_normalized):
+                                    df.at[idx, food_item] = quantity
+                                    break
         
         return df
         
