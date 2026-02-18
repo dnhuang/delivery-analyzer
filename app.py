@@ -11,6 +11,7 @@ import streamlit as st
 import hmac
 
 from analyzer import DeliveryOrderAnalyzer, load_food_items, process_excel
+from labels import generate_labels_pdf
 
 
 def load_config():
@@ -195,6 +196,8 @@ def main():
                 if selected_count > 0:
                     if st.button("🔍 Analyze Selected Orders", type="primary"):
                         sorted_items, total_items = analyzer.analyze(st.session_state.selected_orders)
+                        st.session_state['sorted_items'] = sorted_items
+                        st.session_state['total_items'] = total_items
 
                         if sorted_items:
                             st.success(f"Found {len(sorted_items)} unique items, {total_items} total items")
@@ -259,7 +262,36 @@ def main():
                     st.info("Select some orders to analyze.")
 
     with page_labels:
-        st.info("Coming soon.")
+        sorted_items = st.session_state.get('sorted_items')
+        if not sorted_items:
+            st.info("Run an analysis first to generate labels.")
+        else:
+            menu_df = pd.read_csv('data/menu.csv')
+            lookup = {row['item_zh']: (row['id'], row['item_short_zh']) for _, row in menu_df.iterrows()}
+
+            st.subheader("Label Preview")
+            preview_rows = []
+            for item_zh, quantity in sorted_items:
+                if item_zh in lookup:
+                    item_id, item_short_zh = lookup[item_zh]
+                    preview_rows.append({
+                        'Label': f"[{item_id}]  {item_short_zh}",
+                        'Qty': quantity,
+                    })
+            if preview_rows:
+                preview_df = pd.DataFrame(preview_rows)
+                preview_df.index = range(1, len(preview_df) + 1)
+                st.dataframe(preview_df, use_container_width=True, height=35 * len(preview_df) + 38)
+                st.caption(f"Total labels: {sum(r['Qty'] for r in preview_rows)} (one per item ordered, Avery 5167 format)")
+
+                pdf_bytes = generate_labels_pdf(sorted_items, menu_df)
+                st.download_button(
+                    label="📥 Download Labels PDF",
+                    data=pdf_bytes,
+                    file_name=f"labels_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                    mime="application/pdf",
+                    type="primary",
+                )
 
     with page_routing:
         st.info("Coming soon.")
