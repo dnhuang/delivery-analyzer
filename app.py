@@ -54,14 +54,14 @@ def check_password():
     if "password_correct" not in st.session_state:
         _, col, _ = st.columns([3, 2, 3])
         with col:
-            st.title("上海好吃米道")
+            st.title("🚚 上海好吃米道 🥡")
             st.markdown("<br><br>", unsafe_allow_html=True)
             st.text_input("Password", type="password", placeholder="Password", label_visibility="collapsed", on_change=password_entered, key="password")
         return False
     elif not st.session_state["password_correct"]:
         _, col, _ = st.columns([3, 2, 3])
         with col:
-            st.title("上海好吃米道")
+            st.title("🚚 上海好吃米道 🥡")
             st.markdown("<br><br>", unsafe_allow_html=True)
             st.text_input("Password", type="password", placeholder="Password", label_visibility="collapsed", on_change=password_entered, key="password")
             st.error("Password incorrect. Please try again.")
@@ -72,8 +72,7 @@ def check_password():
 
 def main():
     st.set_page_config(
-        page_title="Delivery Order Analyzer",
-        page_icon="🚚",
+        page_title="上海好吃米道",
         layout="wide"
     )
 
@@ -82,56 +81,42 @@ def main():
 
     # Sidebar
     with st.sidebar:
-        st.markdown("### 👤 Session")
-        if st.button("🚪 Logout"):
+        st.markdown("### 👤 Hailun Xue")
+        if st.button("Logout"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
 
         st.markdown("---")
-        st.markdown("### 📂 Data Management")
+        st.markdown("### 上海好吃米道")
+        st.markdown("Version 3.0")
 
-        uploaded_file = st.file_uploader(
-            "Upload Excel File",
-            type=['xlsx', 'xls'],
-            help="Upload your delivery order Excel file to process"
-        )
-
-        if uploaded_file is not None:
-            if st.button("🔄 Process Excel File"):
-                with st.spinner("Processing Excel file..."):
-                    try:
-                        food_items = load_food_items()
-                        df = process_excel(uploaded_file, food_items)
-                        st.session_state['df'] = df
-                        st.session_state['data_updated'] = True
-                        st.success("Excel file processed successfully!")
-                        st.rerun()
-                    except FileNotFoundError as e:
-                        st.error(f"❌ {e}")
-                    except ValueError as e:
-                        st.error(f"❌ {e}")
-                    except Exception as e:
-                        st.error(f"❌ Error processing file: {e}")
-
-        st.markdown("---")
-        st.markdown("### ℹ️ About")
-        st.markdown("**Delivery Order Analyzer**")
-        st.markdown("Version 2.0 - Enhanced")
-        st.markdown("Secure access enabled")
-        st.markdown("Excel upload supported")
-
-    st.title("🚚 Delivery Order Analyzer")
-    st.markdown("Upload Excel file or analyze existing delivery order data")
+    st.title("👋 Hi Babuh!")
 
     if 'df' not in st.session_state:
-        st.warning("📋 No data loaded. Please upload an Excel file to get started.")
-        st.info("👆 Use the sidebar to upload your delivery order Excel file.")
-        st.markdown("### 📤 How to Upload:")
-        st.markdown("1. Click on 'Browse files' in the sidebar")
-        st.markdown("2. Select your Excel file (.xlsx or .xls)")
-        st.markdown("3. Click 'Process Excel File' to convert and load data")
-        st.markdown("4. Start analyzing your delivery orders!")
+        st.markdown("<br>", unsafe_allow_html=True)
+        _, col, _ = st.columns([1, 2, 1])
+        with col:
+            uploaded_file = st.file_uploader(
+                "Upload RAW WeChat export .xlsx file",
+                type=['xlsx', 'xls'],
+            )
+            if uploaded_file is not None:
+                if st.button("Process", type="primary"):
+                    with st.spinner("Processing..."):
+                        try:
+                            food_items = load_food_items()
+                            df = process_excel(uploaded_file, food_items)
+                            st.session_state['df'] = df
+                            st.session_state['data_updated'] = True
+                            st.success("File processed successfully!")
+                            st.rerun()
+                        except FileNotFoundError as e:
+                            st.error(str(e))
+                        except ValueError as e:
+                            st.error(str(e))
+                        except Exception as e:
+                            st.error(f"Error processing file: {e}")
         st.stop()
 
     analyzer = DeliveryOrderAnalyzer()
