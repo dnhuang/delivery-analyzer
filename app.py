@@ -197,7 +197,7 @@ def main():
                 if sorted_items:
                     st.success(f"Found {len(sorted_items)} unique items, {total_items} total items")
 
-                    tab1, tab2, tab3 = st.tabs(["📊 Summary", "📋 Item List", "📄 Detailed Report"])
+                    tab2, tab1, tab3 = st.tabs(["📋 Item List", "📊 Summary", "📄 Detailed Report"])
 
                     with tab1:
                         st.subheader("Summary")
@@ -209,7 +209,7 @@ def main():
                         with col_c:
                             st.metric("Total Items", total_items)
 
-                        df_chart = pd.DataFrame(sorted_items[:10], columns=['Item', 'Quantity'])
+                        df_chart = pd.DataFrame(sorted_items, columns=['Item', 'Quantity'])
                         st.bar_chart(df_chart.set_index('Item'))
 
                     with tab2:
@@ -217,7 +217,7 @@ def main():
                         df_display = pd.DataFrame(sorted_items, columns=['Food Item', 'Quantity'])
                         df_display.index = range(1, len(df_display) + 1)
                         df_display['Quantity'] = df_display['Quantity'].astype(str)
-                        st.dataframe(df_display, use_container_width=True, height=400)
+                        st.dataframe(df_display, use_container_width=True, height=35 * len(df_display) + 38)
 
                         st.download_button(
                             label="📥 Download as CSV",
