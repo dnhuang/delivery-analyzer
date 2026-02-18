@@ -8,6 +8,7 @@ import json
 
 import pandas as pd
 import streamlit as st
+import hmac
 
 from analyzer import DeliveryOrderAnalyzer, load_food_items, process_excel
 
@@ -44,7 +45,7 @@ def check_password():
             st.session_state["password_correct"] = False
             return
 
-        if st.session_state["password"] == config.get("password", ""):
+        if hmac.compare_digest(st.session_state['password'], config.get("password", "")):
             st.session_state["password_correct"] = True
             del st.session_state["password"]  # don't store password
         else:
@@ -67,14 +68,14 @@ def check_password():
 
 
 def main():
-    if not check_password():
-        st.stop()
-
     st.set_page_config(
         page_title="Delivery Order Analyzer",
         page_icon="🚚",
         layout="wide"
     )
+
+    if not check_password():
+        st.stop()
 
     # Sidebar
     with st.sidebar:
