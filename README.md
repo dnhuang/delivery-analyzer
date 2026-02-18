@@ -105,60 +105,6 @@ The application supports two authentication modes:
 1. **Local Development**: Uses `config.json` file
 2. **Cloud Deployment**: Uses Streamlit secrets management
 
-## Deployment
 
-### Streamlit Cloud
 
-1. Push your code to a GitHub repository
-2. Connect the repository to Streamlit Cloud
-3. Configure the password in the app's secrets
-4. The app will automatically deploy and update when you push changes
 
-### Other Platforms
-
-The application can be deployed on any platform that supports Streamlit applications. Ensure the password is properly configured through environment variables or the platform's secrets management system.
-
-## Technical Details
-
-### Dependencies
-
-- **Streamlit**: Web application framework
-- **Pandas**: Data processing and analysis
-- **OpenPyXL**: Excel file reading
-- **Regular Expressions**: Text parsing and pattern matching
-
-### Architecture
-
-- **Frontend**: Streamlit web interface
-- **Backend**: Python data processing
-- **Authentication**: Password-based access control
-- **Data Storage**: CSV file output for processed data
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Excel File Not Processing**: Ensure the file follows the expected format and starts data from row 4
-2. **Items Not Matching**: Check that food items in `food_items.csv` match the naming in your Excel file
-3. **Authentication Error**: Verify password configuration in config.json or Streamlit secrets
-4. **Missing Dependencies**: Run `pip install -r requirements.txt` to install all required packages
-
-### Error Messages
-
-- **"food_items.csv not found"**: Ensure the food items reference file exists in the project directory
-- **"Password not configured"**: Set up authentication using config.json or Streamlit secrets
-- **"Error processing Excel file"**: Check file format and data structure
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## Security
-
-- All data processing happens locally or in your deployed environment
-- No data is sent to external services
-- Password protection prevents unauthorized access
