@@ -29,8 +29,12 @@ def process_excel(excel_file, food_items: List[str]) -> pd.DataFrame:
         df.columns[5]: 'city',           # 所在城市
         df.columns[6]: 'zip_code',       # 邮政编码
     })
-    df['delivery'] = pd.to_numeric(df['delivery'], errors='coerce')
-    df = df.dropna(subset=['delivery', 'customer']).reset_index(drop=True)
+    df['delivery'] = pd.to_numeric(df['delivery'], errors='coerce') # causes bottom summary table to be NaN
+    df = df.dropna(subset=['delivery', 'customer']).reset_index(drop=True) # bottom summary table gets dropped
+    df['delivery'] = df['delivery'].astype(int)
+    df['phone_number'] = df['phone_number'].apply(lambda x: str(int(x)) if pd.notna(x) else '')
+    df['zip_code'] = df['zip_code'].apply(lambda x: str(int(x)) if pd.notna(x) else '')
+
 
     for food_item in food_items:
         df[food_item] = 0
