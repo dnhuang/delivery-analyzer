@@ -106,8 +106,9 @@ def main():
                     with st.spinner("Processing..."):
                         try:
                             food_items = load_food_items()
-                            df = process_excel(uploaded_file, food_items)
+                            df, discrepancies = process_excel(uploaded_file, food_items)
                             st.session_state['df'] = df
+                            st.session_state['discrepancies'] = discrepancies
                             st.session_state['data_updated'] = True
                             st.success("File processed successfully!")
                             st.rerun()
@@ -125,6 +126,12 @@ def main():
     if st.button("Upload new file"):
         del st.session_state['df']
         st.rerun()
+
+    discrepancies = st.session_state.get('discrepancies', [])
+    if discrepancies:
+        with st.expander(f"⚠️ Warning: {len(discrepancies)} item(s) have quantity mismatches from summary table", expanded=True):
+            for food_item, parsed, expected in discrepancies:
+                st.warning(f"**{food_item}** — parsed: {parsed}, expected: {expected}")
 
     col1, col2 = st.columns([1, 3])
 

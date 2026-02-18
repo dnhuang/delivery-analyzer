@@ -1,6 +1,6 @@
 import pandas as pd
 import re
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 
 def load_food_items(path: str = 'data/food_items.csv') -> List[str]:
@@ -9,11 +9,76 @@ def load_food_items(path: str = 'data/food_items.csv') -> List[str]:
     return food_df['food_items'].tolist()
 
 
-def process_excel(excel_file, food_items: List[str]) -> pd.DataFrame:
+def read_summary_table(excel_file) -> Dict[str, int]:
+    """Read the 商品汇总 summary table from a WeChat export Excel file.
+    Returns {item_name: total_quantity}.
+    """
+    df_raw = pd.read_excel(excel_file, skiprows=3, header=0)
+
+    # Locate the summary table header row (序号 == '商品')
+    header_mask = df_raw['序号'].astype(str).str.strip() == '商品'
+    if not header_mask.any():
+        return {}
+
+    header_idx = int(header_mask.idxmax())
+    summary_df = df_raw.iloc[header_idx + 1:].copy()
+
+    # Stop at the 总计 row
+    total_mask = summary_df['序号'].astype(str).str.strip() == '总计'
+    if total_mask.any():
+        total_idx = int(total_mask.idxmax())
+        summary_df = summary_df.loc[:total_idx - 1]
+
+    summary_df = summary_df.dropna(subset=['序号', '内容'])
+
+    result = {}
+    for _, row in summary_df.iterrows():
+        item_name = str(row['序号']).strip()
+        try:
+            result[item_name] = int(row['内容'])
+        except (ValueError, TypeError):
+            continue
+    return result
+
+
+def validate_against_summary(
+    df: pd.DataFrame,
+    food_items: List[str],
+    summary_dict: Dict[str, int],
+) -> List[Tuple[str, int, int]]:
+    """Compare parsed item totals against the summary table.
+    Returns list of (food_item, parsed_total, expected_total) for any mismatches.
+    Items not present in the summary table are skipped.
+    """
+    def normalize(name: str) -> str:
+        return re.sub(r'\s+', '', name)
+
+    normalized_summary = {normalize(k): v for k, v in summary_dict.items()}
+
+    discrepancies = []
+    for food_item in food_items:
+        parsed_total = int(df[food_item].sum())
+        expected = summary_dict.get(food_item) or normalized_summary.get(normalize(food_item))
+
+        if expected is None:
+            continue  # Item not ordered this batch — skip
+
+        if parsed_total != expected:
+            discrepancies.append((food_item, parsed_total, expected))
+
+    return discrepancies
+
+
+def process_excel(excel_file, food_items: List[str]) -> Tuple[pd.DataFrame, List[Tuple[str, int, int]]]:
     """
     Process an uploaded Excel file into a DataFrame with food item quantity columns.
+    Returns (df, discrepancies) where discrepancies is a list of
+    (food_item, parsed_total, expected_total) for any summary table mismatches.
     Raises ValueError on bad input structure.
     """
+    summary_dict = read_summary_table(excel_file)
+    excel_file.seek(0)
+
     df = pd.read_excel(excel_file, skiprows=3, usecols=[0, 1, 2, 4, 5, 6, 7])
     df = df.dropna(how='all')
 
@@ -76,7 +141,8 @@ def process_excel(excel_file, food_items: List[str]) -> pd.DataFrame:
                     df.at[idx, food_item] = quantity
                     break
 
-    return df
+    discrepancies = validate_against_summary(df, food_items, summary_dict)
+    return df, discrepancies
 
 
 class DeliveryOrderAnalyzer:
