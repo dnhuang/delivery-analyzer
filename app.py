@@ -77,10 +77,10 @@ def check_password():
 def load_food_items():
     """Load the list of food items from food_items.csv"""
     try:
-        food_df = pd.read_csv('food_items.csv')
+        food_df = pd.read_csv('data/food_items.csv')
         return food_df['food_items'].tolist()
     except FileNotFoundError:
-        st.error("food_items.csv not found! Please ensure the file exists.")
+        st.error("data/food_items.csv not found! Please ensure the file exists.")
         return []
     except Exception as e:
         st.error(f"Error loading food items: {str(e)}")
@@ -191,7 +191,7 @@ class DeliveryOrderAnalyzer:
     def load_data_from_csv(self):
         """Load and process the CSV data"""
         try:
-            self.df = pd.read_csv('data.csv')
+            self.df = pd.read_csv('data/data.csv')
             self._identify_chinese_columns()
             return True
             
@@ -276,8 +276,8 @@ def main():
                     processed_df = process_excel_to_csv(uploaded_file)
                     if processed_df is not None:
                         # Save to CSV
-                        processed_df.to_csv('data.csv', index=False)
-                        st.success("Excel file processed and saved as data.csv!")
+                        processed_df.to_csv('data/data.csv', index=False)
+                        st.success("Excel file processed and saved!")
                         st.session_state['data_uploaded'] = True
                         st.session_state['data_updated'] = True
                         st.rerun()
