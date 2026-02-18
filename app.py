@@ -52,16 +52,19 @@ def check_password():
             st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
-        st.title("🔐 Delivery Order Analyzer - Access Required")
-        st.info("Please enter the password to access the application.")
-        st.text_input("Password", type="password", on_change=password_entered, key="password")
-        st.markdown("---")
-        st.markdown("**Contact administrator for access credentials.**")
+        _, col, _ = st.columns([3, 2, 3])
+        with col:
+            st.title("上海好吃米道")
+            st.markdown("<br><br>", unsafe_allow_html=True)
+            st.text_input("Password", type="password", placeholder="Password", label_visibility="collapsed", on_change=password_entered, key="password")
         return False
     elif not st.session_state["password_correct"]:
-        st.title("🔐 Delivery Order Analyzer - Access Required")
-        st.text_input("Password", type="password", on_change=password_entered, key="password")
-        st.error("😕 Password incorrect. Please try again.")
+        _, col, _ = st.columns([3, 2, 3])
+        with col:
+            st.title("上海好吃米道")
+            st.markdown("<br><br>", unsafe_allow_html=True)
+            st.text_input("Password", type="password", placeholder="Password", label_visibility="collapsed", on_change=password_entered, key="password")
+            st.error("Password incorrect. Please try again.")
         return False
     else:
         return True
