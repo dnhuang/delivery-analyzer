@@ -98,7 +98,7 @@ def main():
         _, col, _ = st.columns([1, 2, 1])
         with col:
             uploaded_file = st.file_uploader(
-                "Upload RAW WeChat export .xlsx file",
+                "Upload a RAW WeChat export .xlsx file",
                 type=['xlsx', 'xls'],
             )
             if uploaded_file is not None:
@@ -122,28 +122,37 @@ def main():
     analyzer = DeliveryOrderAnalyzer()
     analyzer.load(st.session_state['df'])
 
-    st.success(f"✅ Loaded {len(analyzer.df)} delivery orders with {len(analyzer.food_columns)} food items")
+    if st.button("Upload new file"):
+        del st.session_state['df']
+        st.rerun()
 
-    col1, col2 = st.columns([1, 1])
+    col1, col2 = st.columns([1, 3])
 
     with col1:
         st.header("📋 Select Orders")
 
-        col1a, col1b, col1c = st.columns(3)
+        st.success(f"✅ Loaded {len(analyzer.df)} delivery orders with {len(analyzer.food_columns)} food items")
+
+        col1a, col1b, col1c, = st.columns([1, 1, 1])
         with col1a:
             if st.button("Select All"):
                 st.session_state.selected_orders = list(range(len(analyzer.df)))
+                for i in analyzer.df.index:
+                    st.session_state[f"order_{i}"] = True
         with col1b:
             if st.button("Clear All"):
                 st.session_state.selected_orders = []
+                for i in analyzer.df.index:
+                    st.session_state[f"order_{i}"] = False
         with col1c:
-            show_details = st.checkbox("Show Details", value=False)
+            show_details = st.toggle("Show Details")
 
         if 'selected_orders' not in st.session_state:
             st.session_state.selected_orders = []
 
         if st.session_state.get('data_updated', False):
-            st.session_state.selected_orders = []
+            for i in analyzer.df.index:
+                st.session_state[f"order_{i}"] = False
             st.session_state['data_updated'] = False
 
         with st.container():
@@ -152,21 +161,21 @@ def main():
                                  if pd.notna(row[col]) and row[col] > 0)
 
                 order_key = f"order_{idx}"
-                is_selected = idx in st.session_state.selected_orders
-                order_text = f"{row['delivery']} - {row['customer']} ({row['city']}) - {item_count} items"
+                if order_key not in st.session_state:
+                    st.session_state[order_key] = False
 
-                selected = st.checkbox(order_text, value=is_selected, key=order_key)
+                order_text = f"{row['delivery']} - {row['customer']} ({row['city']}) - {item_count} unique items"
+                st.checkbox(order_text, key=order_key)
 
-                if selected and idx not in st.session_state.selected_orders:
-                    st.session_state.selected_orders.append(idx)
-                elif not selected and idx in st.session_state.selected_orders:
-                    st.session_state.selected_orders.remove(idx)
-
-                if show_details and selected:
+                if show_details and st.session_state[order_key]:
                     with st.expander(f"Details for {row['customer']}", expanded=False):
                         st.write(f"**Phone:** {row['phone_number']}")
                         st.write(f"**Address:** {row['address']}, {row['city']} {row['zip_code']}")
                         st.write(f"**Items Ordered:** {row['items_ordered']}")
+
+        st.session_state.selected_orders = [
+            idx for idx in analyzer.df.index if st.session_state.get(f"order_{idx}", False)
+        ]
 
     with col2:
         st.header("📊 Analysis Results")
@@ -179,9 +188,9 @@ def main():
                 sorted_items, total_items = analyzer.analyze(st.session_state.selected_orders)
 
                 if sorted_items:
-                    st.success(f"Analysis complete! Found {len(sorted_items)} unique items, {total_items} total items")
+                    st.success(f"Found {len(sorted_items)} unique items, {total_items} total items")
 
-                    tab1, tab2, tab3 = st.tabs(["📈 Summary", "📋 Item List", "📄 Detailed Report"])
+                    tab1, tab2, tab3 = st.tabs(["📊 Summary", "📋 Item List", "📄 Detailed Report"])
 
                     with tab1:
                         st.subheader("Summary")

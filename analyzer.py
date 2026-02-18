@@ -35,6 +35,8 @@ def process_excel(excel_file, food_items: List[str]) -> pd.DataFrame:
     df['phone_number'] = df['phone_number'].apply(lambda x: str(int(x)) if pd.notna(x) else '')
     df['zip_code'] = df['zip_code'].apply(lambda x: str(int(x)) if pd.notna(x) else '')
 
+    if len(df) == 0:
+        raise ValueError("No orders found. Make sure you're uploading a RAW WeChat export .xlsx file.")
 
     for food_item in food_items:
         df[food_item] = 0
