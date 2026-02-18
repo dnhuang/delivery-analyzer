@@ -14,22 +14,14 @@ from typing import Dict, List, Tuple
 
 def load_config():
     """Load configuration from Streamlit secrets or config.json file."""
-    # Try Streamlit secrets first (for deployment)
+    # Try Streamlit secrets first (for cloud deployment)
     try:
-        if hasattr(st, 'secrets'):
-            if 'password' in st.secrets:
-                return {"password": st.secrets["password"]}
-            else:
-                # Running on Streamlit Cloud but password not configured
-                st.error("❌ Password not configured in Streamlit secrets!")
-                st.info("💡 Go to your app settings → Secrets and add:")
-                st.code('password = "your_password_here"')
-                return None
-    except Exception as e:
-        st.error(f"Error accessing Streamlit secrets: {str(e)}")
-        return None
-    
-    # Fallback to config.json file (for local development)
+        if 'password' in st.secrets:
+            return {"password": st.secrets["password"]}
+    except Exception:
+        pass  # No secrets configured locally, fall through to config.json
+
+    # Fallback to config.json (for local development)
     try:
         with open('config.json', 'r') as f:
             return json.load(f)
