@@ -1,6 +1,8 @@
-# 上海好吃米道 — Delivery Order Analyzer
+# Delivery Analyzer - 上海好吃米道
 
-A Streamlit web application for analyzing Chinese food delivery orders exported from WeChat. It parses raw WeChat export files, extracts food item quantities per order, cross-validates totals against the built-in summary table, and generates reports and CSV exports.
+A Streamlit web application built for a small Chinese food delivery business, 上海好吃米道.
+
+The app processes food orders exported from WeChat by parsing raw export files, extracting item quantities for each order, validating totals against WeChat’s built-in summary table, and generating structured reports along with downloadable CSV files.
 
 ## Features
 
