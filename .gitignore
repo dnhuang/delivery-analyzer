@@ -1,10 +1,16 @@
+# Python
 .venv
-CLAUDE.md
-utility.xlsx
-deployment_guide.md
-eda.ipynb
-config.json
-DEPLOYMENT_INSTRUCTIONS.md
-data/*.xlsx
 __pycache__/
+
+# Local development
+config.json          # local password — use Streamlit secrets in production
+DEPLOYMENT.md        # deployment guide with sensitive details
+
+# Claude Code
+CLAUDE.md            # AI assistant instructions, kept local
+
+# Data files
+data/*.xlsx          # uploaded Excel files (wechat exports, samples)
+
+# macOS
 .DS_Store
