@@ -29,6 +29,7 @@ def process_excel(excel_file, food_items: List[str]) -> pd.DataFrame:
         df.columns[5]: 'city',           # 所在城市
         df.columns[6]: 'zip_code',       # 邮政编码
     })
+    df['delivery'] = pd.to_numeric(df['delivery'], errors='coerce')
     df = df.dropna(subset=['delivery', 'customer']).reset_index(drop=True)
 
     for food_item in food_items:
