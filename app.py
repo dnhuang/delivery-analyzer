@@ -216,6 +216,7 @@ def main():
                         st.subheader("Item Quantities (Sorted by Total)")
                         df_display = pd.DataFrame(sorted_items, columns=['Food Item', 'Quantity'])
                         df_display.index = range(1, len(df_display) + 1)
+                        df_display['Quantity'] = df_display['Quantity'].astype(str)
                         st.dataframe(df_display, use_container_width=True, height=400)
 
                         st.download_button(
