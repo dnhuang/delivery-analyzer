@@ -3,14 +3,22 @@
 __pycache__/
 
 # Local development
-config.json          # local password — use Streamlit secrets in production
-DEPLOYMENT.md        # deployment guide with sensitive details
+# local password — use Streamlit secrets in production
+config.json
+# deployment guide with sensitive details
+DEPLOYMENT.md
 
 # Claude Code
-CLAUDE.md            # AI assistant instructions, kept local
+# AI assistant instructions, kept local
+CLAUDE.md
 
 # Data files
-data/*.xlsx          # uploaded Excel files (wechat exports, samples)
+# uploaded Excel files (wechat exports, samples)
+data/*.xlsx
+
+# Scratch / exploratory files
+utility.xlsx
+eda.ipynb
 
 # macOS
 .DS_Store
