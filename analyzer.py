@@ -3,10 +3,10 @@ import re
 from typing import Dict, List, Tuple
 
 
-def load_food_items(path: str = 'data/food_items.csv') -> List[str]:
+def load_food_items(path: str = 'data/menu.csv') -> List[str]:
     """Load food items from CSV. Raises on failure."""
     food_df = pd.read_csv(path)
-    return food_df['food_items'].tolist()
+    return food_df['item_zh'].tolist()
 
 
 def read_summary_table(excel_file) -> Dict[str, int]:
