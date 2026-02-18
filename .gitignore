@@ -1,5 +1,7 @@
 .venv
+CLAUDE.md
 utility.xlsx
 deployment_guide.md
 eda.ipynb
 config.json
+DEPLOYMENT_INSTRUCTIONS.md
