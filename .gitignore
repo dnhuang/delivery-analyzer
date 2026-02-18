@@ -6,6 +6,5 @@ eda.ipynb
 config.json
 DEPLOYMENT_INSTRUCTIONS.md
 data/data.csv
-data/input_example.xlsx
-data/raw_input_example.xlsx
+data/*.xlsx
 __pycache__/

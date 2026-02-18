@@ -14,20 +14,20 @@ def process_excel(excel_file, food_items: List[str]) -> pd.DataFrame:
     Process an uploaded Excel file into a DataFrame with food item quantity columns.
     Raises ValueError on bad input structure.
     """
-    df = pd.read_excel(excel_file, skiprows=3, usecols=list(range(1, 8)))
+    df = pd.read_excel(excel_file, skiprows=3, usecols=[0, 1, 2, 4, 5, 6, 7])
     df = df.dropna(how='all')
 
     if len(df.columns) < 7:
         raise ValueError(f"Expected at least 7 columns, got {len(df.columns)}")
 
     df = df.rename(columns={
-        df.columns[0]: 'delivery',
-        df.columns[1]: 'customer',
-        df.columns[2]: 'phone_number',
-        df.columns[3]: 'address',
-        df.columns[4]: 'city',
-        df.columns[5]: 'zip_code',
-        df.columns[6]: 'items_ordered',
+        df.columns[0]: 'delivery',       # 序号  (sequence number)
+        df.columns[1]: 'customer',       # 姓名  (customer name)
+        df.columns[2]: 'items_ordered',  # 内容  (items text)
+        df.columns[3]: 'phone_number',   # 手机号码
+        df.columns[4]: 'address',        # 收货地址
+        df.columns[5]: 'city',           # 所在城市
+        df.columns[6]: 'zip_code',       # 邮政编码
     })
     df = df.dropna(subset=['delivery', 'customer']).reset_index(drop=True)
 
