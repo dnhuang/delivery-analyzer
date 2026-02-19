@@ -11,6 +11,7 @@ The app processes food orders exported from WeChat by parsing raw export files, 
 - **Secure access** — password-protected with dual auth (Streamlit secrets for cloud, `config.json` for local)
 - **Interactive order selection** — select individual orders or use Select All / Clear All
 - **Analysis and export** — generates item quantity reports, bar charts, and downloadable CSV/text exports
+- **Label generation** — generates Avery 5167 label sheets as a downloadable PDF (one label per item ordered, showing item ID and short Chinese name)
 
 ## Installation
 
@@ -58,6 +59,7 @@ Then open `http://localhost:8501` in your browser.
 4. **Select** — check the orders you want to include in the analysis
 5. **Analyze** — click "Analyze Selected Orders" to generate the report
 6. **Export** — download results as CSV or a text report
+7. **Labels** — switch to the Labels tab to download an Avery 5167 label PDF
 
 ## Input File Format
 

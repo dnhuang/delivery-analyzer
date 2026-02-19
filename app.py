@@ -11,6 +11,7 @@ import streamlit as st
 import hmac
 
 from analyzer import DeliveryOrderAnalyzer, load_food_items, process_excel
+from labels import generate_labels_pdf
 
 
 def load_config():
@@ -93,171 +94,207 @@ def main():
 
     st.title("👋 Hi Babuh!")
 
-    if 'df' not in st.session_state:
-        st.markdown("<br>", unsafe_allow_html=True)
-        _, col, _ = st.columns([1, 2, 1])
-        with col:
-            uploaded_file = st.file_uploader(
-                "Upload a RAW WeChat export .xlsx file",
-                type=['xlsx', 'xls'],
-            )
-            if uploaded_file is not None:
-                if st.button("Process", type="primary"):
-                    with st.spinner("Processing..."):
-                        try:
-                            food_items = load_food_items()
-                            df, discrepancies = process_excel(uploaded_file, food_items)
-                            st.session_state['df'] = df
-                            st.session_state['discrepancies'] = discrepancies
-                            st.session_state['data_updated'] = True
-                            st.success("File processed successfully!")
-                            st.rerun()
-                        except FileNotFoundError as e:
-                            st.error(str(e))
-                        except ValueError as e:
-                            st.error(str(e))
-                        except Exception as e:
-                            st.error(f"Error processing file: {e}")
-        st.stop()
+    page_analyze, page_labels, page_routing = st.tabs(["Analyze", "Labels", "Routing"])
 
-    analyzer = DeliveryOrderAnalyzer()
-    analyzer.load(st.session_state['df'])
-
-    if st.button("Upload new file"):
-        del st.session_state['df']
-        st.rerun()
-
-    discrepancies = st.session_state.get('discrepancies', [])
-    if discrepancies:
-        with st.expander(f"⚠️ Warning: {len(discrepancies)} item(s) have quantity mismatches from summary table", expanded=True):
-            for food_item, parsed, expected in discrepancies:
-                st.warning(f"**{food_item}** — parsed: {parsed}, expected: {expected}")
-
-    col1, col2 = st.columns([1, 3])
-
-    with col1:
-        st.header("📋 Select Orders")
-
-        st.success(f"✅ Loaded {len(analyzer.df)} delivery orders with {len(analyzer.food_columns)} food items")
-
-        col1a, col1b, col1c, = st.columns([1, 1, 1])
-        with col1a:
-            if st.button("Select All"):
-                st.session_state.selected_orders = list(range(len(analyzer.df)))
-                for i in analyzer.df.index:
-                    st.session_state[f"order_{i}"] = True
-        with col1b:
-            if st.button("Clear All"):
-                st.session_state.selected_orders = []
-                for i in analyzer.df.index:
-                    st.session_state[f"order_{i}"] = False
-        with col1c:
-            show_details = st.toggle("Show Details")
-
-        if 'selected_orders' not in st.session_state:
-            st.session_state.selected_orders = []
-
-        if st.session_state.get('data_updated', False):
-            for i in analyzer.df.index:
-                st.session_state[f"order_{i}"] = False
-            st.session_state['data_updated'] = False
-
-        with st.container():
-            for idx, row in analyzer.df.iterrows():
-                item_count = sum(1 for col in analyzer.food_columns
-                                 if pd.notna(row[col]) and row[col] > 0)
-
-                order_key = f"order_{idx}"
-                if order_key not in st.session_state:
-                    st.session_state[order_key] = False
-
-                order_text = f"{row['delivery']} - {row['customer']} ({row['city']}) - {item_count} unique items"
-                st.checkbox(order_text, key=order_key)
-
-                if show_details and st.session_state[order_key]:
-                    with st.expander(f"Details for {row['customer']}", expanded=False):
-                        st.write(f"**Phone:** {row['phone_number']}")
-                        st.write(f"**Address:** {row['address']}, {row['city']} {row['zip_code']}")
-                        st.write(f"**Items Ordered:** {row['items_ordered']}")
-
-        st.session_state.selected_orders = [
-            idx for idx in analyzer.df.index if st.session_state.get(f"order_{idx}", False)
-        ]
-
-    with col2:
-        st.header("📊 Analysis Results")
-
-        selected_count = len(st.session_state.selected_orders)
-        st.info(f"Selected: {selected_count} orders")
-
-        if selected_count > 0:
-            if st.button("🔍 Analyze Selected Orders", type="primary"):
-                sorted_items, total_items = analyzer.analyze(st.session_state.selected_orders)
-
-                if sorted_items:
-                    st.success(f"Found {len(sorted_items)} unique items, {total_items} total items")
-
-                    tab2, tab1, tab3 = st.tabs(["📋 Item List", "📊 Summary", "📄 Detailed Report"])
-
-                    with tab1:
-                        st.subheader("Summary")
-                        col_a, col_b, col_c = st.columns(3)
-                        with col_a:
-                            st.metric("Orders Analyzed", selected_count)
-                        with col_b:
-                            st.metric("Unique Items", len(sorted_items))
-                        with col_c:
-                            st.metric("Total Items", total_items)
-
-                        df_chart = pd.DataFrame(sorted_items, columns=['Item', 'Quantity'])
-                        st.bar_chart(df_chart.set_index('Item'))
-
-                    with tab2:
-                        st.subheader("Item Quantities (Sorted by Total)")
-                        df_display = pd.DataFrame(sorted_items, columns=['Food Item', 'Quantity'])
-                        df_display.index = range(1, len(df_display) + 1)
-                        df_display['Quantity'] = df_display['Quantity'].astype(str)
-                        st.dataframe(df_display, use_container_width=True, height=35 * len(df_display) + 38)
-
-                        st.download_button(
-                            label="📥 Download as CSV",
-                            data=df_display.to_csv(index=False),
-                            file_name=f"delivery_analysis_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                            mime="text/csv"
-                        )
-
-                    with tab3:
-                        st.subheader("Detailed Report")
-                        report = (
-                            f"**DELIVERY ORDER ANALYSIS REPORT**\n"
-                            f"================================\n\n"
-                            f"**Analysis Date:** {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-                            f"**Orders Analyzed:** {selected_count}\n"
-                            f"**Unique Items Ordered:** {len(sorted_items)}\n"
-                            f"**Total Items:** {total_items}\n\n"
-                            f"**SELECTED ORDERS:**\n"
-                        )
-                        for idx in st.session_state.selected_orders:
-                            row = analyzer.df.iloc[idx]
-                            report += f"\n• {row['delivery']} - {row['customer']} ({row['city']})"
-                        report += "\n\n**ITEM QUANTITIES:**\n"
-                        for item_name, quantity in sorted_items:
-                            report += f"\n• {item_name}: {quantity}"
-
-                        st.text_area("Report", report, height=400)
-                        st.download_button(
-                            label="📥 Download Report",
-                            data=report,
-                            file_name=f"delivery_report_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                            mime="text/plain"
-                        )
-                else:
-                    st.warning("No items found in selected orders.")
+    with page_analyze:
+        if 'df' not in st.session_state:
+            st.markdown("<br>", unsafe_allow_html=True)
+            _, col, _ = st.columns([1, 2, 1])
+            with col:
+                uploaded_file = st.file_uploader(
+                    "Upload a RAW WeChat export .xlsx file",
+                    type=['xlsx', 'xls'],
+                )
+                if uploaded_file is not None:
+                    if st.button("Process", type="primary"):
+                        with st.spinner("Processing..."):
+                            try:
+                                food_items = load_food_items()
+                                df, discrepancies = process_excel(uploaded_file, food_items)
+                                st.session_state['df'] = df
+                                st.session_state['discrepancies'] = discrepancies
+                                st.session_state['data_updated'] = True
+                                st.success("File processed successfully!")
+                                st.rerun()
+                            except FileNotFoundError as e:
+                                st.error(str(e))
+                            except ValueError as e:
+                                st.error(str(e))
+                            except Exception as e:
+                                st.error(f"Error processing file: {e}")
         else:
-            st.info("Select some orders to analyze.")
+            analyzer = DeliveryOrderAnalyzer()
+            analyzer.load(st.session_state['df'])
 
-    st.markdown("---")
-    st.markdown("**Instructions:** Upload an Excel file using the sidebar, then select delivery orders and click 'Analyze Selected Orders' to generate quantity reports.")
+            if st.button("Upload new file"):
+                del st.session_state['df']
+                st.rerun()
+
+            discrepancies = st.session_state.get('discrepancies', [])
+            if discrepancies:
+                with st.expander(f"⚠️ Warning: {len(discrepancies)} item(s) have quantity mismatches from summary table", expanded=True):
+                    for food_item, parsed, expected in discrepancies:
+                        st.warning(f"**{food_item}** — parsed: {parsed}, expected: {expected}")
+
+            col1, col2 = st.columns([1, 3])
+
+            with col1:
+                st.header("📋 Select Orders")
+
+                st.success(f"✅ Loaded {len(analyzer.df)} delivery orders with {len(analyzer.food_columns)} food items")
+
+                col1a, col1b, col1c, = st.columns([1, 1, 1])
+                with col1a:
+                    if st.button("Select All"):
+                        st.session_state.selected_orders = list(range(len(analyzer.df)))
+                        for i in analyzer.df.index:
+                            st.session_state[f"order_{i}"] = True
+                with col1b:
+                    if st.button("Clear All"):
+                        st.session_state.selected_orders = []
+                        for i in analyzer.df.index:
+                            st.session_state[f"order_{i}"] = False
+                with col1c:
+                    show_details = st.toggle("Show Details")
+
+                if 'selected_orders' not in st.session_state:
+                    st.session_state.selected_orders = []
+
+                if st.session_state.get('data_updated', False):
+                    for i in analyzer.df.index:
+                        st.session_state[f"order_{i}"] = False
+                    st.session_state['data_updated'] = False
+
+                with st.container():
+                    for idx, row in analyzer.df.iterrows():
+                        item_count = sum(1 for col in analyzer.food_columns
+                                         if pd.notna(row[col]) and row[col] > 0)
+
+                        order_key = f"order_{idx}"
+                        if order_key not in st.session_state:
+                            st.session_state[order_key] = False
+
+                        order_text = f"{row['delivery']} - {row['customer']} ({row['city']}) - {item_count} unique items"
+                        st.checkbox(order_text, key=order_key)
+
+                        if show_details and st.session_state[order_key]:
+                            with st.expander(f"Details for {row['customer']}", expanded=False):
+                                st.write(f"**Phone:** {row['phone_number']}")
+                                st.write(f"**Address:** {row['address']}, {row['city']} {row['zip_code']}")
+                                st.write(f"**Items Ordered:** {row['items_ordered']}")
+
+                st.session_state.selected_orders = [
+                    idx for idx in analyzer.df.index if st.session_state.get(f"order_{idx}", False)
+                ]
+
+            with col2:
+                st.header("📊 Analysis Results")
+
+                selected_count = len(st.session_state.selected_orders)
+                st.info(f"Selected: {selected_count} orders")
+
+                if selected_count > 0:
+                    if st.button("🔍 Analyze Selected Orders", type="primary"):
+                        sorted_items, total_items = analyzer.analyze(st.session_state.selected_orders)
+                        st.session_state['sorted_items'] = sorted_items
+                        st.session_state['total_items'] = total_items
+
+                        if sorted_items:
+                            st.success(f"Found {len(sorted_items)} unique items, {total_items} total items")
+
+                            tab2, tab1, tab3 = st.tabs(["📋 Item List", "📊 Summary", "📄 Detailed Report"])
+
+                            with tab1:
+                                st.subheader("Summary")
+                                col_a, col_b, col_c = st.columns(3)
+                                with col_a:
+                                    st.metric("Orders Analyzed", selected_count)
+                                with col_b:
+                                    st.metric("Unique Items", len(sorted_items))
+                                with col_c:
+                                    st.metric("Total Items", total_items)
+
+                                df_chart = pd.DataFrame(sorted_items, columns=['Item', 'Quantity'])
+                                st.bar_chart(df_chart.set_index('Item'))
+
+                            with tab2:
+                                st.subheader("Item Quantities (Sorted by Total)")
+                                df_display = pd.DataFrame(sorted_items, columns=['Food Item', 'Quantity'])
+                                df_display.index = range(1, len(df_display) + 1)
+                                df_display['Quantity'] = df_display['Quantity'].astype(str)
+                                st.dataframe(df_display, use_container_width=True, height=35 * len(df_display) + 38)
+
+                                st.download_button(
+                                    label="📥 Download as CSV",
+                                    data=df_display.to_csv(index=False),
+                                    file_name=f"delivery_analysis_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                                    mime="text/csv"
+                                )
+
+                            with tab3:
+                                st.subheader("Detailed Report")
+                                report = (
+                                    f"**DELIVERY ORDER ANALYSIS REPORT**\n"
+                                    f"================================\n\n"
+                                    f"**Analysis Date:** {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+                                    f"**Orders Analyzed:** {selected_count}\n"
+                                    f"**Unique Items Ordered:** {len(sorted_items)}\n"
+                                    f"**Total Items:** {total_items}\n\n"
+                                    f"**SELECTED ORDERS:**\n"
+                                )
+                                for idx in st.session_state.selected_orders:
+                                    row = analyzer.df.iloc[idx]
+                                    report += f"\n• {row['delivery']} - {row['customer']} ({row['city']})"
+                                report += "\n\n**ITEM QUANTITIES:**\n"
+                                for item_name, quantity in sorted_items:
+                                    report += f"\n• {item_name}: {quantity}"
+
+                                st.text_area("Report", report, height=400)
+                                st.download_button(
+                                    label="📥 Download Report",
+                                    data=report,
+                                    file_name=f"delivery_report_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                                    mime="text/plain"
+                                )
+                        else:
+                            st.warning("No items found in selected orders.")
+                else:
+                    st.info("Select some orders to analyze.")
+
+    with page_labels:
+        sorted_items = st.session_state.get('sorted_items')
+        if not sorted_items:
+            st.info("Run an analysis first to generate labels.")
+        else:
+            menu_df = pd.read_csv('data/menu.csv')
+            lookup = {row['item_zh']: (row['id'], row['item_short_zh']) for _, row in menu_df.iterrows()}
+
+            st.subheader("Label Preview")
+            preview_rows = []
+            for item_zh, quantity in sorted_items:
+                if item_zh in lookup:
+                    item_id, item_short_zh = lookup[item_zh]
+                    preview_rows.append({
+                        'Label': f"[{item_id}]  {item_short_zh}",
+                        'Qty': quantity,
+                    })
+            if preview_rows:
+                preview_df = pd.DataFrame(preview_rows)
+                preview_df.index = range(1, len(preview_df) + 1)
+                st.dataframe(preview_df, use_container_width=True, height=35 * len(preview_df) + 38)
+                st.caption(f"Total labels: {sum(r['Qty'] for r in preview_rows)} (one per item ordered, Avery 5167 format)")
+
+                pdf_bytes = generate_labels_pdf(sorted_items, menu_df)
+                st.download_button(
+                    label="📥 Download Labels PDF",
+                    data=pdf_bytes,
+                    file_name=f"labels_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                    mime="application/pdf",
+                    type="primary",
+                )
+
+    with page_routing:
+        st.info("Coming soon.")
 
 
 if __name__ == "__main__":
