@@ -1,24 +1,23 @@
-# Delivery Analyzer - 上海好吃米道
+# Delivery Order Analyzer
 
-A Streamlit web application built for a small Chinese food delivery business, 上海好吃米道.
-
-The app processes food orders exported from WeChat by parsing raw export files, extracting item quantities for each order, validating totals against WeChat’s built-in summary table, and generating structured reports along with downloadable CSV files.
+A secure web application for analyzing delivery order data from Excel files. This tool processes food delivery orders, extracts item quantities, and generates detailed reports for business analysis.
 
 ## Features
 
-- **Raw WeChat export support** — reads the native `.xlsx` export format directly, no manual formatting needed
-- **Summary table validation** — after parsing, automatically cross-checks item totals against the WeChat summary table and surfaces any discrepancies
-- **Secure access** — password-protected with dual auth (Streamlit secrets for cloud, `config.json` for local)
-- **Interactive order selection** — select individual orders or use Select All / Clear All
-- **Analysis and export** — generates item quantity reports, bar charts, and downloadable CSV/text exports
-- **Label generation** — generates Avery 5167 label sheets as a downloadable PDF (one label per item ordered, showing item ID and short Chinese name)
+- **Secure Access**: Password-protected application with configurable authentication
+- **Excel File Upload**: Process delivery order data from Excel (.xlsx/.xls) files
+- **Intelligent Parsing**: Automatically extracts food items and quantities from order text
+- **Interactive Analysis**: Select specific orders for targeted analysis
+- **Comprehensive Reporting**: Generate detailed reports with item quantities and totals
+- **Data Export**: Download analysis results as CSV files or text reports
+- **Real-time Processing**: Instant analysis and visualization of delivery data
 
 ## Installation
 
 ### Prerequisites
 
-- Python 3.7+
-- `make` (pre-installed on macOS)
+- Python 3.7 or higher
+- pip package manager
 
 ### Setup
 
@@ -28,76 +27,84 @@ git clone <repository-url>
 cd delivery-analyzer
 ```
 
-2. Create a virtual environment and install dependencies:
+2. Install required dependencies:
 ```bash
-make install
+pip install -r requirements.txt
 ```
 
-3. Configure authentication.
+3. Configure authentication:
 
-   **For local development** — create `config.json` in the project root:
+   **For local development:**
+   Create a `config.json` file in the project root:
    ```json
-   { "password": "your_password" }
+   {
+     "password": "your_secure_password"
+   }
    ```
 
-   **For Streamlit Cloud** — add to your app's secrets in the dashboard:
+   **For Streamlit Cloud deployment:**
+   Add the password to your app's secrets in the Streamlit Cloud dashboard:
    ```toml
-   password = "your_password"
+   password = "your_secure_password"
    ```
+
+4. Ensure you have the food items reference file:
+   - The `food_items.csv` file should contain the list of available food items
+   - This file is used for matching and parsing order data
 
 ## Usage
 
+### Running Locally
+
+1. Start the Streamlit application:
 ```bash
-make run
+streamlit run delivery_analyzer_secure_enhanced.py
 ```
 
-Then open `http://localhost:8501` in your browser.
+2. Open your web browser and navigate to the displayed URL (typically `http://localhost:8501`)
 
-1. **Login** — enter the configured password
-2. **Upload** — drag and drop a raw WeChat export `.xlsx` file onto the main page
-3. **Process** — click "Process" to parse and load the orders
-4. **Select** — check the orders you want to include in the analysis
-5. **Analyze** — click "Analyze Selected Orders" to generate the report
-6. **Export** — download results as CSV or a text report
-7. **Labels** — switch to the Labels tab to download an Avery 5167 label PDF
+3. Enter the configured password to access the application
 
-## Input File Format
+### Processing Orders
 
-The app expects a **raw WeChat export** `.xlsx` file with the following structure:
+1. **Upload Excel File**: Use the sidebar to upload your delivery order Excel file
+2. **Process Data**: Click "Process Excel File" to convert and load the data
+3. **Select Orders**: Choose specific delivery orders for analysis using checkboxes
+4. **Analyze**: Click "Analyze Selected Orders" to generate reports
+5. **Export Results**: Download CSV files or detailed text reports
 
-- **Rows 0–2**: WeChat metadata (ignored)
-- **Row 3**: Column headers — `序号, 姓名, 内容, 标签, 手机号码, 收货地址, 所在城市, 邮政编码`
-- **Rows 4–N**: Customer order records
-- **Below orders**: Summary table (`商品汇总`) — automatically excluded from order parsing and used for validation
+## Data Format
 
-Column mapping:
+### Excel File Structure
 
-| Column | Chinese | Meaning |
-|--------|---------|---------|
-| 0 | 序号 | Sequence number |
-| 1 | 姓名 | Customer name |
-| 2 | 内容 | Items ordered |
-| 3 | 标签 | Tags (dropped) |
-| 4 | 手机号码 | Phone number |
-| 5 | 收货地址 | Delivery address |
-| 6 | 所在城市 | City |
-| 7 | 邮政编码 | ZIP code |
+The application expects Excel files with the following columns (starting from row 4):
+- Column 1: Delivery identifier
+- Column 2: Customer name
+- Column 3: Phone number
+- Column 4: Address
+- Column 5: City
+- Column 6: ZIP code
+- Column 7: Items ordered (text format)
 
-### Items Text Format
+### Items Format
 
-Each order's items text is Chinese comma-separated (`， `) with `x` quantity notation, ending with a total price segment that is dropped during parsing:
+Items should be formatted as: `[Item Name] x[Quantity], [Item Name] x[Quantity], Total: $[Amount]`
 
-```
-肉末香茹胡罗卜糯米烧卖 15个/份x3， 荠菜鲜肉馄饨 50/份x2， 总价：$100.00
-```
+Example: `肉末香茹胡罗卜糯米烧卖 15个/份x3， 荠菜鲜肉馄饨 50/份x2， 总价：$100.00`
 
-## Menu Reference (`data/menu.csv`)
+## Configuration
 
-The parser matches order items against `data/menu.csv`, which is the authoritative list of available food items. Update this file manually when new items are added.
+### Food Items List
 
-| Column | Description |
-|--------|-------------|
-| `id` | Auto-incremented integer ID |
-| `item_zh` | Full Chinese name with unit spec (e.g. `肉末香茹胡罗卜糯米烧卖15个/份`) |
-| `item_short_zh` | Shortened Chinese name (e.g. `烧卖`) |
-| `item_en` | Hanyu pinyin of short name (e.g. `shao mai`) |
+Update the `food_items.csv` file to include all available food items. Each item should be on a separate line under the `food_items` column header.
+
+### Authentication
+
+The application supports two authentication modes:
+
+1. **Local Development**: Uses `config.json` file
+2. **Cloud Deployment**: Uses Streamlit secrets management
+
+
+
+
